@@ -1,0 +1,18 @@
+% Facts
+   male(mamun).
+   male(nazmul).
+   female(shema).
+   female(sokina).
+% Parents relationship
+    parent(mamun,nazmul,sokina).
+    parent(shema,nazmul,sokina).
+% Rule: sister relation
+    sisterof(X,Y) :-
+           female(X),
+           parent(X,F,M),
+          parent(Y,F,M),
+          X \= Y.
+Query:
+?- sisterof(shama,mamun).
+Output:
+true.

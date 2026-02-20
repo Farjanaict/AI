@@ -1,0 +1,710 @@
+lab 1:
+
+import copy
+
+N = 3
+row_moves = [0, 0, -1, 1]
+col_moves = [-1, 1, 0, 0]
+
+class p8_board:
+  def __init__(self, board, x, y, depth, parent=None):
+    self.board = board
+    self.x = x
+    self.y = y
+    self.depth = depth
+    self.parent = parent
+
+def is_valid(x, y):
+  return 0 <= x < N and 0 <= y < N
+
+def is_goal(board):
+  goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]] 
+  return goal == board
+
+def dfs_solve(start_board, x, y):
+    stack = []
+    start_tuple = tuple(map(tuple, start_board))
+    visited = {start_tuple}
+    stack.append(p8_board(start_board, x, y, 0))
+
+    while stack:
+        current = stack.pop()
+
+        if is_goal(current.board):
+            print("Solution found!")
+            print_solution(current)
+            return
+
+        for i in range(4):
+            new_x = current.x + row_moves[i]
+            new_y = current.y + col_moves[i]
+
+            if is_valid(new_x, new_y):
+                new_board = copy.deepcopy(current.board)
+                new_board[current.x][current.y], new_board[new_x][new_y] = \
+                    new_board[new_x][new_y], new_board[current.x][current.y]
+
+                board_tuple = tuple(map(tuple, new_board))
+
+                if board_tuple not in visited:
+                    visited.add(board_tuple)
+                    stack.append(p8_board(new_board, new_x, new_y, current.depth + 1, current))
+
+    print("NO solution found")
+
+def print_solution(node):
+    path = []
+    current = node
+    while current is not None:
+        path.append(current)
+        current = current.parent
+    path.reverse()
+
+    for i, step in enumerate(path):
+        print(f"--- Step {i} ---")
+        for r in step.board:
+            print(r)
+        print()
+if __name__ == "__main__":
+    start = [[1, 2, 3], [4, 0, 5], [7, 8, 6]]
+    x, y = 1, 1
+
+    print("Solving with DFS...")
+    dfs_solve(start, x, y)
+
+
+
+
+DLS:
+from collections import deque
+import copy
+
+N = 3
+row_moves = [0, 0, -1, 1]
+col_moves = [-1, 1, 0, 0]
+
+class p8_board:
+  def __init__(self, board, x, y, depth, parent=None):
+    self.board = board
+    self.x = x
+    self.y = y
+    self.depth = depth
+    self.parent = parent
+
+def is_valid(x, y):
+  return 0 <= x < N and 0 <= y < N
+
+def is_goal(board):
+  goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]] 
+  return goal == board
+
+def dls_solve(start_board, x, y, limit):
+    stack = []
+    start_tuple = tuple(map(tuple, start_board))
+    visited = {start_tuple}
+    # Initialize with depth 0
+    stack.append(p8_board(start_board, x, y, 0))
+
+    while stack:
+        current = stack.pop()
+
+        if is_goal(current.board):
+            print("Solution found!")
+            print_solution(current)
+            return
+
+        # DLS MODIFICATION: Only expand neighbors if current depth is less than limit
+        if current.depth < limit:
+            for i in range(4):
+                new_x = current.x + row_moves[i]
+                new_y = current.y + col_moves[i]
+
+                if is_valid(new_x, new_y):
+                    new_board = copy.deepcopy(current.board)
+                    new_board[current.x][current.y], new_board[new_x][new_y] = \
+                        new_board[new_x][new_y], new_board[current.x][current.y]
+
+                    board_tuple = tuple(map(tuple, new_board))
+
+                    if board_tuple not in visited:
+                        visited.add(board_tuple)
+                        stack.append(p8_board(new_board, new_x, new_y, current.depth + 1, current))
+
+    print("NO solution found within depth limit")
+
+def print_solution(node):
+    path = []
+    current = node
+    while current is not None:
+        path.append(current)
+        current = current.parent
+    path.reverse()
+
+    for i, step in enumerate(path):
+        print(f"--- Step {i} ---")
+        for r in step.board:
+            print(r)
+        print()
+
+if __name__ == "__main__":
+    start = [[1, 2, 3], [4, 0, 5], [7, 8, 6]]
+    x, y = 1, 1
+    depth_limit = 200
+
+    print(f"Solving with DLS (Limit: {depth_limit})...")
+    dls_solve(start, x, y, depth_limit)
+
+
+
+lab 2:
+
+import copy
+import heapq
+
+N = 3
+row_moves = [0, 0, -1, 1]
+col_moves = [-1, 1, 0, 0]
+goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]] 
+class p8_board:
+  def __init__(self, board, x, y, depth, parent=None):
+    self.board = board
+    self.x = x
+    self.y = y
+    self.depth = depth
+    self.parent = parent
+
+def is_valid(x, y):
+  return 0 <= x < N and 0 <= y < N
+
+def is_goal(board):
+  
+  return goal == board
+
+def manhattan_distance(board):
+  
+  dist = 0
+  for i in range(N):
+    for j in range(N):
+      val = board[i][j]
+      if val != 0:
+        f=1
+        for row in range(N):
+          for col in range(N):
+            if val==goal[row][col]:
+              dist += abs(i - row) + abs(j - col)
+              f=0
+              break
+          if f==0:
+            break
+        
+  return dist
+
+def best_first_solve(start_board, x, y):
+  visited = set()
+
+  heap = []
+  counter = 0
+  start_h = manhattan_distance(start_board)
+  heapq.heappush(heap, (start_h, counter, p8_board(start_board, x, y, 0)))
+
+  while heap:
+    h, c, current = heapq.heappop(heap)
+
+    board_tuple = tuple(map(tuple, current.board))
+    if board_tuple in visited:
+      continue
+    visited.add(board_tuple)
+
+    if is_goal(current.board):
+      print("Solution found (Best-First Search)!")
+      print_solution(current)
+      return
+
+    for i in range(4):
+      new_x = current.x + row_moves[i]
+      new_y = current.y + col_moves[i]
+
+      if is_valid(new_x, new_y):
+        new_board = copy.deepcopy(current.board)
+        new_board[current.x][current.y], new_board[new_x][new_y] = \
+          new_board[new_x][new_y], new_board[current.x][current.y]
+
+        board_t = tuple(map(tuple, new_board))
+        if board_t not in visited:
+          counter += 1
+          h_new = manhattan_distance(new_board)
+          heapq.heappush(heap, (h_new, counter, p8_board(new_board, new_x, new_y, current.depth + 1, current)))
+
+  print("NO solution found")
+
+def print_solution(node):
+    path = []
+    current = node
+    while current is not None:
+        path.append(current)
+        current = current.parent
+    path.reverse()
+
+    for i, step in enumerate(path):
+        print(f"--- Step {i} ---")
+        for r in step.board:
+            print(r)
+        print()
+
+if __name__ == "__main__":
+    start = [[1, 2, 3], [4, 0, 5], [7, 8, 6]]
+    x, y = 1, 1
+
+    print("Solving with Best-First Search (Manhattan heuristic)...")
+    best_first_solve(start, x, y)
+
+
+
+
+lab 4:
+
+import heapq
+
+# Goal state
+GOAL = ((1, 2, 3),
+        (4, 5, 6),
+        (7, 8, 0))
+
+MOVES = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+# Manhattan distance heuristic
+def heuristic(state):
+    dist = 0
+    for i in range(3):
+        for j in range(3):
+            val = state[i][j]
+            if val != 0:
+                x, y = divmod(val - 1, 3)
+                dist += abs(x - i) + abs(y - j)
+    return dist
+
+# Find blank tile position
+def find_blank(state):
+    for i in range(3):
+        for j in range(3):
+            if state[i][j] == 0:
+                return i, j
+
+# Generate child states
+def generate_children(state):
+    children = []
+    x, y = find_blank(state)
+
+    for dx, dy in MOVES:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx < 3 and 0 <= ny < 3:
+            new_state = [list(row) for row in state]
+            new_state[x][y], new_state[nx][ny] = new_state[nx][ny], new_state[x][y]
+            children.append(tuple(tuple(row) for row in new_state))
+
+    return children
+
+# AO* Algorithm
+def ao_star(start):
+    open_list = []
+    heapq.heappush(open_list, (heuristic(start), 0, start, [start]))
+    visited = set()
+
+    while open_list:
+        f, g, state, path = heapq.heappop(open_list)
+
+        if state == GOAL:
+            return path
+
+        if state in visited:
+            continue
+        visited.add(state)
+
+        for child in generate_children(state):
+            if child not in visited:
+                new_g = g + 1
+                new_f = new_g + heuristic(child)
+                heapq.heappush(open_list, (new_f, new_g, child, path + [child]))
+
+    return None
+
+# Test case
+start_state = ((1, 2, 3),
+               (4, 0, 6),
+               (7, 5, 8))
+
+solution = ao_star(start_state)
+
+if solution:
+    for step in solution:
+        for row in step:
+            print(row)
+        print()
+else:
+    print("No solution found")
+
+
+
+lab 5:
+
+import copy
+import heapq
+
+N = 3
+row_moves = [0, 0, -1, 1]
+col_moves = [-1, 1, 0, 0]
+goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]] 
+
+class p8_board:
+  def __init__(self, board, x, y, depth, parent=None):
+    self.board = board
+    self.x = x
+    self.y = y
+    self.depth = depth
+    self.parent = parent
+
+def is_valid(x, y):
+    return 0 <= x < N and 0 <= y < N
+
+def is_goal(board):
+    return goal == board
+
+def manhattan_distance(board):
+  dist = 0
+  for i in range(N):
+    for j in range(N):
+      val = board[i][j]
+      if val != 0:
+        for row in range(N):
+          for col in range(N):
+            if val == goal[row][col]:
+              dist += abs(i - row) + abs(j - col)
+              break
+  return dist
+
+def a_star_solve(start_board, x, y):
+  visited = set()
+  heap = []
+  counter = 0
+
+  start_h = manhattan_distance(start_board)
+  heapq.heappush(heap, (start_h, counter, p8_board(start_board, x, y, 0)))
+
+  while heap:
+    f, c, current = heapq.heappop(heap)
+    board_tuple = tuple(map(tuple, current.board))
+
+    if board_tuple in visited:
+      continue
+    visited.add(board_tuple)
+
+    if is_goal(current.board):
+      print("Solution found (A* Search)!")
+      print_solution(current)
+      return
+
+    for i in range(4):
+      new_x = current.x + row_moves[i]
+      new_y = current.y + col_moves[i]
+
+      if is_valid(new_x, new_y):
+        new_board = copy.deepcopy(current.board)
+        new_board[current.x][current.y], new_board[new_x][new_y] = \
+          new_board[new_x][new_y], new_board[current.x][current.y]
+
+        if tuple(map(tuple, new_board)) not in visited:
+          counter += 1
+          new_g = current.depth + 1
+          new_f = new_g + manhattan_distance(new_board)
+          heapq.heappush(heap,
+            (new_f, counter, p8_board(new_board, new_x, new_y, new_g, current)))
+
+  print("No solution found")
+
+def print_solution(node):
+    path = []
+    while node:
+        path.append(node)
+        node = node.parent
+    path.reverse()
+
+    for i, step in enumerate(path):
+        print(f"--- Step {i} ---")
+        for r in step.board:
+            print(r)
+        print()
+
+if __name__ == "__main__":
+    start = [[1, 2, 3], [4, 0, 5], [7, 8, 6]]
+    a_star_solve(start, 1, 1)
+
+
+
+lab 6:
+
+class p8_board:
+    def __init__(self, board, x, y, depth=0, parent=None):
+        self.board = board
+        self.x = x
+        self.y = y
+        self.depth = depth
+        self.parent = parent
+
+row_moves = [0, 0, -1, 1]
+col_moves = [-1, 1, 0, 0]
+
+def is_valid(x, y):
+    return 0 <= x < N and 0 <= y < N
+def is_goal(board):
+    goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    return goal == board
+
+def heuristic(board):
+    h = 0
+    for i in range(3):
+        for j in range(3):
+            val = board[i][j]
+            if val != 0:
+                gx = (val - 1) // 3
+                gy = (val - 1) % 3
+                h += abs(i - gx) + abs(j - gy)
+    return h
+
+def hill_climbing(start_board, x, y):
+    current = p8_board(start_board, x, y)
+    current_h = heuristic(current.board)
+    step = 0
+
+    while True:
+        if is_goal(current.board):
+            prints(current)
+            return
+
+        neighbors = []
+
+        for i in range(4):
+            new_x = current.x + row_moves[i]
+            new_y = current.y + col_moves[i]
+
+            if is_valid(new_x, new_y):
+                new_board = copy.deepcopy(current.board)
+                new_board[current.x][current.y], new_board[new_x][new_y] = \
+                    new_board[new_x][new_y], new_board[current.x][current.y]
+
+                h = heuristic(new_board)
+                neighbors.append((h, new_board, new_x, new_y))
+
+        best = neighbors[0]
+        for item in neighbors:
+            if item[0] < best[0]:
+                best = item
+
+        best_h = best[0]
+        best_board = best[1]
+        bx = best[2]
+        by = best[3]
+
+        if best_h >= current_h:
+            print("Stuck at local minimum(plateau)!")
+            return
+
+        current = p8_board(best_board, bx, by, current.depth + 1, current)
+        current_h = best_h
+        step += 1
+
+def prints(node):
+    path = []
+    current = node
+    while current is not None:
+        path.append(current)
+        current = current.parent
+    path.reverse()
+    for i, step in enumerate(path):
+        print(f"Step {i}")
+        for r in step.board:
+            print(r)
+        print()
+    print("Goal reached!")
+
+start = [[1, 2, 3], [4, 0, 5], [7, 8, 6]]
+x, y = 1, 1
+
+hill_climbing(start, x, y)
+
+
+
+
+lab 7:
+
+male(nazmul).
+male(karim).
+male(jakir).
+male(akib).
+
+female(aliya).
+female(salma).
+female(nasrin).
+female(mitu).
+
+father(nazmul, jakir).
+mother(aliya, jakir).
+
+father(nazmul, nasrin).
+mother(aliya, nasrin).
+
+father(jakir, akib).
+mother(nasrin, mitu).
+
+father(karim, mitu).
+mother(salma, mitu).
+
+parent(X, Y) :- father(X, Y).
+parent(X, Y) :- mother(X, Y).
+
+sibling(X, Y) :-
+    parent(P, X),
+    parent(P, Y),
+    X \= Y.
+
+grandparent(X, Y) :-
+    parent(X, Z),
+    parent(Z, Y).
+
+Sample Query:
+?- sibling(jakir, nasrin).
+?- grandparent(nazmul, akib).
+
+Sample Output:
+true
+true
+
+5.2 Like-Dislike:
+likes(nazmul, tea).
+likes(nazmul, football).
+likes(karim, coffee).
+
+dislikes(nazmul, smoking).
+dislikes(karim, tea).
+
+friend(X, Y) :-
+    likes(X, Z),
+    likes(Y, Z),
+    X \= Y.
+
+Sample Query:
+?- friend(nazmul, karim).
+?- likes(nazmul, football).
+
+Sample Output:
+false
+true
+
+
+
+lab 8:
+
+addition(A, B, Result) :- Result is A + B.
+subtraction(A, B, Result) :- Result is A - B.
+multiplication(A, B, Result) :- Result is A * B.
+division(A, B, Result) :- Result is A / B.
+int_division(A, B, Result) :- Result is A // B.
+modulus(A, B, Result) :- Result is A mod B.
+exponentiation(A, B, Result) :- Result is A ** B.
+absolute(A, Result) :- Result is abs(A).
+square_root(A, Result) :- Result is sqrt(A).
+to_float(A, Result) :- Result is float(A).
+round_number(A, Result) :- Result is round(A).
+truncate_number(A, Result) :- Result is truncate(A).
+fractional_part(A, Result) :- Result is float_fractional_part(A).
+integer_part(A, Result) :- Result is float_integer_part(A).
+minimum(A, B, Result) :- Result is min(A, B).
+maximum(A, B, Result) :- Result is max(A, B).
+pi_value(Result) :- Result is pi.
+
+Sample Query:
+?- addition(10, 5, R1).
+?- subtraction(10, 5, R2).
+?- multiplication(10, 5, R3).
+?- division(10, 4, R4).
+?- int_division(10, 3, R5).
+?- modulus(10, 3, R6).
+?- exponentiation(2, 3, R7).
+?- absolute(-9, R8).
+?- square_root(16, R9).
+?- to_float(7, R10).
+?- round_number(9.6, R11).
+?- truncate_number(9.6, R12).
+?- fractional_part(3.14, R13).
+?- integer_part(3.14, R14).
+?- minimum(4, 9, R15).
+?- maximum(4, 9, R16).
+?- pi_value(R17).
+
+Sample Output:
+R1 = 15.
+R2 = 5.
+R3 = 50.
+R4 = 2.5.
+R5 = 3.
+R6 = 1.
+R7 = 8.
+R8 = 9.
+R9 = 4.0.
+R10 = 7.0.
+
+
+
+lab 9:
+
+move(1, Source, Target, _) :-
+    write('Move disk 1 from '), write(Source), write(' to '), writeln(Target).
+
+move(N, Source, Target, Auxiliary) :-
+    N > 1,
+    M is N - 1,
+    move(M, Source, Auxiliary, Target),
+    write('Move disk '), write(N), write(' from '), write(Source), write(' to '), writeln(Target),
+    move(M, Auxiliary, Target, Source).
+
+Sample Query:
+? - move(4, source, target, auxiliary).
+Sample Output:
+Move disk 1 from source to auxiliary
+Move disk 2 from source to target
+Move disk 1 from auxiliary to target
+Move disk 3 from source to auxiliary
+Move disk 1 from target to source
+Move disk 2 from target to auxiliary
+Move disk 1 from source to auxiliary
+Move disk 4 from source to target
+Move disk 1 from auxiliary to target
+Move disk 2 from auxiliary to source
+Move disk 1 from target to source
+Move disk 3 from auxiliary to target
+Move disk 1 from source to auxiliary
+Move disk 2 from source to target
+Move disk 1 from auxiliary to target
+true
+
+
+
+lab 10:
+
+move(state(middle,onbox,middle,hasnot), grasp,
+ state(middle,onbox,middle,has)).
+move(state(P,onfloor,P,H), climb,
+ state(P,onbox,P,H)).
+move(state(P1,onfloor,P1,H), drag(P1,P2),
+ state(P2,onfloor,P2,H)).
+move(state(P1,onfloor,B,H), walk(P1,P2),
+ state(P2,onfloor,B,H)).
+canget(state(_,_,_,has)).
+canget(State1) :-
+ move(State1,_,State2),
+ canget(State2).
+
+
+Sample Query:
+?-canget(state(atdoor, onfloor, atwindow, hasnot)).
+Sample Output:
+true
